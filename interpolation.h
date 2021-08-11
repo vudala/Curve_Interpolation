@@ -11,6 +11,9 @@ typedef struct {
 } Interpolation;
 
 
+#define GX_DEGREE 3
+
+void do_magic(Interpolation * inter, double * funct_values);
 Interpolation *read_input ();
 
 #endif
