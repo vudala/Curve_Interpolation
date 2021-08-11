@@ -4,16 +4,15 @@
 #include "matrix.h"
 
 typedef struct {
-    unsigned int n; // Número de valores tabelados
-    unsigned int m; // Número de funções sobre valores tabelados
+    _uint n; // Número de valores tabelados
+    _uint m; // Número de funções sobre valores tabelados
     double *values; // Valores tabelados
     matrix_double func_values; // Funções sobre valores tabelados
 } Interpolation;
 
 
-#define GX_DEGREE 3
+void curve_adjustment (Interpolation * inter, matrix_double results);
 
-void do_magic(Interpolation * inter, double * funct_values);
 Interpolation *read_input ();
 
 #endif

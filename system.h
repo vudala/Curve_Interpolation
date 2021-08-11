@@ -5,7 +5,7 @@
 #include "interpolation.h"
 
 typedef struct {
-    unsigned int n; // Dimensão da matriz
+    _uint n; // Dimensão da matriz
     matrix_double A; // Matriz original A
     matrix_double L; // Matriz decomposta L
     matrix_double U; // Matriz decomposta U
@@ -13,7 +13,7 @@ typedef struct {
 } System;
 
 // Inicializa um novo sistema
-System *new_system (unsigned int n);
+System *new_system (_uint n);
 
 // Lê um sistema
 System *read_system ();
@@ -22,12 +22,11 @@ System *read_system ();
 void free_system (System *sys);
 
 // Realiza a triangularização
-void triangularization (const System * restrict sys, const unsigned int piv);
+void triangularization (const System * restrict sys, _cuint piv);
 
-// Calcula a matriz inversa do sistema
-void solve_it (System *sys, matrix_double inverse, unsigned int m);
+// Resolve um sistema LU
+void solve (System *sys, matrix_double result, _uint m);
 
-
-System * build_system (const Interpolation * restrict inter);
+void retrossubs (matrix_double L, matrix_double U, vector_double terms, vector_double result, _cuint n);
 
 #endif

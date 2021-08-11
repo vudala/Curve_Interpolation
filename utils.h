@@ -7,11 +7,11 @@
 #define SUCCESS_STATUS_CODE 0
 #define FAILURE_STATUS_CODE 1
 
+typedef unsigned int _uint;
+typedef const _uint  _cuint;
+
 // Certifica que um ponteiro foi alocado
 void must_alloc (void *ptr, const char* desc);
-
-// Retorna o horário atual em ms
-double timestamp (void);
 
 // Checa se n é um número inválido
 void check_exception (double n, const char *desc);

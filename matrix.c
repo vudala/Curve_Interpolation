@@ -5,22 +5,30 @@
 #include "matrix.h"
 #include "utils.h"
 
-matrix_double new_matrix (unsigned int m, unsigned int n)
+matrix_double new_matrix (_cuint m, _cuint n)
 {
-    matrix_double new = (matrix_double) malloc(sizeof(double*) * m);
-    must_alloc(new, __func__);
+    matrix_double matrix = (matrix_double) malloc(sizeof(double*) * m);
+    must_alloc(matrix, __func__);
 
-    new[0] = (double*) calloc(m * n, sizeof(double));
-    must_alloc(new[0], __func__);
+    matrix[0] = (double*) calloc(m * n, sizeof(double));
+    must_alloc(matrix[0], __func__);
 
-    for (unsigned int i = 0; i < m; i++)
-        new[i] = new[0] + i * n;
+    for (_uint i = 0; i < m; i++)
+        matrix[i] = matrix[0] + i * n;
 
-    return new;
+    return matrix;
 }
 
 
-matrix_double set_identity (matrix_double matrix, unsigned int n)
+vector_double new_vector (_cuint n)
+{
+    vector_double vector = malloc(sizeof(double) * n);
+    must_alloc(vector, __func__);
+    return vector;
+}
+
+
+matrix_double set_identity (matrix_double matrix, _uint n)
 {
     for (int i = 0; i < n; i++)
         matrix[i][i] = 1;
@@ -28,15 +36,23 @@ matrix_double set_identity (matrix_double matrix, unsigned int n)
 }
 
 
-void print_matrix (matrix_double mat, const unsigned int m, const unsigned int n)
+void print_matrix (matrix_double mat, _cuint m, _cuint n)
 {
-    unsigned int i, j;
+    _uint i, j;
     for (i = 0; i < m; i++)
     {
         for (j = 0; j < n; j++)
             printf("%.19f ", mat[i][j]);
         printf("\n");
     }
+}
+
+void print_vector (vector_double vec, _cuint n)
+{
+    _uint j;
+    for (j = 0; j < n; j++)
+        printf("%.19f ", vec[j]);
+    printf("\n");
 }
 
 
@@ -47,7 +63,7 @@ void free_matrix (matrix_double mat)
 }
 
 
-matrix_double clone_matrix (matrix_double mat, unsigned int m, unsigned int n)
+matrix_double clone_matrix (matrix_double mat, _uint m, _uint n)
 {   
     matrix_double clone = (matrix_double) malloc(sizeof(double*) * m);
     must_alloc(clone, __func__);

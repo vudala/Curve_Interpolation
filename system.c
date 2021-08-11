@@ -8,7 +8,8 @@
 #include "utils.h"
 #include "interpolation.h"
 
-System *new_system (unsigned int n)
+
+System *new_system (_uint n)
 {
     System *new = (System*) malloc(sizeof(System));
     must_alloc(new, __func__);
@@ -20,11 +21,12 @@ System *new_system (unsigned int n)
     return new;
 }
 
+
 System * build_system (const Interpolation * restrict inter)
 {   
     System * sys = new_system(inter->n);
 
-    unsigned int i, j;
+    _uint i, j;
     for (i = 0; i < inter->n; i++)
         for (j = 0; j < inter->n; j++)
             sys->A[i][j] = pow(inter->values[i], j);
@@ -36,6 +38,7 @@ System * build_system (const Interpolation * restrict inter)
 
     return sys;
 }
+
 
 void free_system (System *sys)
 {
@@ -50,16 +53,16 @@ void free_system (System *sys)
 // Realiza o pivoteamente de um sistema linear e suas partes
 void pivoting (const System * restrict sys)
 {
-    const unsigned int n = sys->n;
+    _cuint n = sys->n;
     const matrix_double L = sys->L;
     const matrix_double U = sys->U;
     const matrix_double B = sys->B;
 
-    double *L_row_k = NULL;
-    double *U_row_k = NULL;
-    double *B_row_k = NULL;
+    vector_double L_row_k = NULL;
+    vector_double U_row_k = NULL;
+    vector_double B_row_k = NULL;
 
-    unsigned int i, k, c, max_index;
+    _uint i, k, c, max_index;
     double max, aux;
 
     for (k = 0; k < n - 1; k++)
@@ -95,20 +98,20 @@ Otimizações feitas:
 - Uso de constantes em ponteiros e valores imutáveis ao longo do código
 - Localização de variáveis para serem armazenadas em registrador
 - Cálculos de índice são guardados em variáveis para não precisarem ser recalculados
-- Uso de unsigned int ao invés de int
+- Uso de _uint ao invés de int
 - Uso de restrict nos ponteiros
 - Funções auxiliares também foram otimizadas
 */
-void triangularization (const System * restrict sys, const unsigned int piv)
+void triangularization (const System * restrict sys, _cuint piv)
 {
-    const unsigned int n = sys->n;
+    _cuint n = sys->n;
     const matrix_double L = sys->L;
     const matrix_double U = sys->U;
 
-    unsigned int i, k, j;
+    _uint i, k, j;
     double m;
-    double *U_row_i = NULL;
-    double *U_row_k = NULL;
+    vector_double U_row_i = NULL;
+    vector_double U_row_k = NULL;
     double element;
 
     for (k = 0; k < n - 1; k++)
@@ -141,8 +144,8 @@ void triangularization (const System * restrict sys, const unsigned int piv)
 }
 
 
-// Realiza a retrossubstituição para resolver um sistema
-void retrosubs_downward (matrix_double A, double *x, double *b, unsigned int n)
+// Realiza a retrossubstituição de cima para baixo para resolver um sistema
+void retrosubs_downward (matrix_double A, vector_double x, vector_double b, _uint n)
 {
     matrix_double clone = clone_matrix(A, n, n);
 
@@ -158,8 +161,8 @@ void retrosubs_downward (matrix_double A, double *x, double *b, unsigned int n)
 }
 
 
-// Realiza a retrossubstituição para resolver um sistema
-void retrosubs_upward (matrix_double A, double *x, double *b, unsigned int n)
+// Realiza a retrossubstituição de baixo para cima para resolver um sistema
+void retrosubs_upward (matrix_double A, vector_double x, vector_double b, _uint n)
 {
     matrix_double clone = clone_matrix(A, n, n);
 
@@ -175,19 +178,22 @@ void retrosubs_upward (matrix_double A, double *x, double *b, unsigned int n)
 }
 
 
-void solve_it (System *sys, matrix_double inverse, unsigned int m)
+// Realiza a retrossubstituição para resolver um sistema decomposto LU
+void retrossubs (matrix_double L, matrix_double U, vector_double terms, vector_double result, _cuint n)
 {
-    double *column = NULL;
+    vector_double aux = new_vector(n);
 
-    double *y = malloc(sizeof(double) * sys->n);
-    must_alloc(y, __func__);
+    retrosubs_downward(L, aux, terms, n);
+    retrosubs_upward(U, result, aux, n);
 
+    free(aux);
+    aux = NULL;
+}
+
+
+// Resolve um sistema linear decomposto em LU
+void solve (System *sys, matrix_double result, _uint m)
+{
     for (int i = 0; i < m; i++)
-    {
-        retrosubs_downward(sys->L, y, sys->B[i], sys->n);
-
-        retrosubs_upward(sys->U, inverse[i], y, sys->n);
-    }
-
-    column = NULL;
+        retrossubs(sys->L, sys->U, sys->B[i], result[i], sys->n);
 }
