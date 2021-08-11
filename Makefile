@@ -1,5 +1,5 @@
 CC = 		gcc
-OBJS = 		main.o system.o matrix.o utils.o interpolation.o
+OBJS = 		main.o system.o matrix.o utils.o input.o
 LIBS = 		-lm
 OUTPUT = 	matrixInv
 CFLAGS = 	-g 
