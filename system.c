@@ -6,39 +6,36 @@
 #include "system.h"
 #include "matrix.h"
 #include "utils.h"
+#include "interpolation.h"
 
 System *new_system (unsigned int n)
 {
     System *new = (System*) malloc(sizeof(System));
     must_alloc(new, __func__);
 
-    new->L = new_matrix(n);
-    new->A = new_matrix(n);
-    new->B = set_identity(new_matrix(n), n);
+    new->A = new_matrix(n, n);
+    new->L = new_matrix(n, n);
     new->n = n;
 
     return new;
 }
 
+System * build_system (const Interpolation * restrict inter)
+{   
+    System * sys = new_system(inter->n);
 
-System *read_system ()
-{
-    unsigned int n;
-    fscanf(stdin, "%u\n", &n);
+    unsigned int i, j;
+    for (i = 0; i < inter->n; i++)
+        for (j = 0; j < inter->n; j++)
+            sys->A[i][j] = pow(inter->values[i], j);
 
-    System *sys = new_system(n);
-    sys->n = n;
+    sys->U = clone_matrix(sys->A, sys->n, sys->n);
+    sys->B = clone_matrix(inter->func_values, inter->m, inter->n);
 
-    int i, j;
-    for (i = 0; i < n; i++)
-        for (j = 0; j < n; j++)
-            fscanf(stdin, "%f", &(sys->A[i][j]));
-
-    sys->U = clone_matrix(sys->A, sys->n);
+    triangularization(sys, 0);
 
     return sys;
 }
-
 
 void free_system (System *sys)
 {
@@ -51,88 +48,103 @@ void free_system (System *sys)
 
 
 // Realiza o pivoteamente de um sistema linear e suas partes
-void pivoting (float **A, float *b, float **B, float **L, unsigned int n)
+void pivoting (const System * restrict sys)
 {
-    float max, aux;
-    unsigned int max_index;
-    int i, k;
+    const unsigned int n = sys->n;
+    const matrix_double L = sys->L;
+    const matrix_double U = sys->U;
+    const matrix_double B = sys->B;
+
+    double *L_row_k = NULL;
+    double *U_row_k = NULL;
+    double *B_row_k = NULL;
+
+    unsigned int i, k, c, max_index;
+    double max, aux;
 
     for (k = 0; k < n - 1; k++)
     {
         max_index = k;
-        max = fabs(A[k][k]);
+        max = fabs(U[k][k]);
         for (i = k + 1; i < n; i++)
-            if (fabs(A[i][k]) > max)
+            if (fabs(U[i][k]) > max)
                 max_index = i;
 
         if (max_index != k)
         { // Se terminou em um índice diferente de onde começou, troca
-            for (int c = 0; c < n; c++)
-            {
-                aux = A[k][c];
-                A[k][c] = A[max_index][c];
-                A[max_index][c] = aux;
-                
-                if (L && B)
-                {
-                    aux = L[k][c];
-                    L[k][c] = L[max_index][c];
-                    L[max_index][c] = aux;
+            L_row_k = L[k];
+            U_row_k = U[k];
+            B_row_k = B[k];
 
-                    aux = B[k][c];
-                    B[k][c] = B[max_index][c];
-                    B[max_index][c] = aux;
-                }
-            }
-
-            if (b)
+            for (c = 0; c < n; c++)
             {
-                aux = b[k];
-                b[k] = b[max_index];
-                b[max_index] = aux;
+                aux = L_row_k[c];
+                L_row_k[c] = L[max_index][c];
+                L[max_index][c] = aux;
+
+                aux = U_row_k[c];
+                U_row_k[c] = U[max_index][c];
+                U[max_index][c] = aux;
             }
         }
     }
 }
 
-
-double triangularization (System *sys, unsigned int piv)
+/* 
+Otimizações feitas:
+- Uso de constantes em ponteiros e valores imutáveis ao longo do código
+- Localização de variáveis para serem armazenadas em registrador
+- Cálculos de índice são guardados em variáveis para não precisarem ser recalculados
+- Uso de unsigned int ao invés de int
+- Uso de restrict nos ponteiros
+- Funções auxiliares também foram otimizadas
+*/
+void triangularization (const System * restrict sys, const unsigned int piv)
 {
-    double time_tri = timestamp();
-    int i, k, j;
-    double m;
+    const unsigned int n = sys->n;
+    const matrix_double L = sys->L;
+    const matrix_double U = sys->U;
 
-    for (k = 0; k < sys->n - 1; k++)
+    unsigned int i, k, j;
+    double m;
+    double *U_row_i = NULL;
+    double *U_row_k = NULL;
+    double element;
+
+    for (k = 0; k < n - 1; k++)
     {
+        U_row_k = U[k];
+        element = U_row_k[k];
+        
         if (piv)
-            pivoting(sys->U, NULL, sys->B, sys->L, sys->n);
+            pivoting(sys);
             
-        for (i = k + 1; i < sys->n; i++)
+        for (i = k + 1; i < n; i++)
         {
-            m = sys->U[i][k] / sys->U[k][k];
+            U_row_i = U[i];
+
+            m = U_row_i[k] / element;
             check_exception(m, __func__);
 
-            sys->L[i][k] = m;
-            sys->U[i][k] = 0.0f;
+            L[i][k] = m;
+            U_row_i[k] = 0.0f;
 
-            for (j = k + 1; j < sys->n; j++)
+            for (j = k + 1; j < n; j++)
             {
-                sys->U[i][j] -= (m * sys->U[k][j]);
-                check_exception(sys->U[i][j], __func__);
+                U_row_i[j] -= (m * U_row_k[j]);
+                check_exception(U_row_i[j], __func__);
             }
         }
     }
 
-    set_identity(sys->L, sys->n);
-
-    return timestamp() - time_tri;
+    set_identity(L, n);
 }
 
 
 // Realiza a retrossubstituição para resolver um sistema
-void retrosubs_downward (float **A, float *x, float *b, unsigned int n)
+void retrosubs_downward (matrix_double A, double *x, double *b, unsigned int n)
 {
-    float **clone = clone_matrix(A, n);
+    matrix_double clone = clone_matrix(A, n, n);
 
     for (int i = 0; i < n; i++)
     {
@@ -145,10 +157,11 @@ void retrosubs_downward (float **A, float *x, float *b, unsigned int n)
     free_matrix(clone);
 }
 
+
 // Realiza a retrossubstituição para resolver um sistema
-void retrosubs_upward (float **A, float *x, float *b, unsigned int n)
+void retrosubs_upward (matrix_double A, double *x, double *b, unsigned int n)
 {
-    float **clone = clone_matrix(A, n);
+    matrix_double clone = clone_matrix(A, n, n);
 
     for (int i = n - 1; i >= 0; i--)
     {
@@ -162,126 +175,19 @@ void retrosubs_upward (float **A, float *x, float *b, unsigned int n)
 }
 
 
-float *get_column(float **mat, unsigned int n, unsigned int col)
+void solve_it (System *sys, matrix_double inverse, unsigned int m)
 {
-    float *column = malloc(sizeof(float) * n);
-    must_alloc(column, __func__);
+    double *column = NULL;
 
-    for (int i = 0; i < n; i++)
-        column[i] = mat[i][col];
-
-    return column;
-}
-
-
-void invert (System *sys, float **x, double *x_total_time, double *y_total_time)
-{
-    double time_y, time_x;
-    float *column = NULL;
-
-    float *y = malloc(sizeof(float) * sys->n);
+    double *y = malloc(sizeof(double) * sys->n);
     must_alloc(y, __func__);
 
-    for (int i = 0; i < sys->n; i++)
+    for (int i = 0; i < m; i++)
     {
-        time_y = timestamp();
+        retrosubs_downward(sys->L, y, sys->B[i], sys->n);
 
-        column = get_column(sys->B, sys->n, i);
-        retrosubs_downward(sys->L, y, column, sys->n);
-        free(column);
-        time_y = timestamp() - time_y;
-        
-        time_x = timestamp();
-        retrosubs_upward(sys->U, x[i], y, sys->n);
-        time_x = timestamp() - time_x;
-
-        *y_total_time += time_y;
-        *x_total_time += time_x;
+        retrosubs_upward(sys->U, inverse[i], y, sys->n);
     }
-
-    *y_total_time /= sys->n;
-    *x_total_time /= sys->n;
 
     column = NULL;
-}
-
-
-// Calcula o resíduo de um sistema linear e sua solução
-float *residue (System *sys, float *b, float *x)
-{
-    float *res = malloc(sys->n * sizeof(float));
-    must_alloc(res, __func__);
-
-    int i, k;
-    double ax;
-
-    for (i = 0; i < sys->n; i++)
-    {
-        ax = 0.0f;
-        for (k = 0; k < sys->n; k++)
-        {
-            ax += sys->A[i][k] * x[k];
-            check_exception(ax, __func__);
-        }
-        res[i] = b[i] - ax;
-    }
-    
-    return res;
-}
-
-
-// Calcula a norma do resíduo
-float residue_norm (float *res, unsigned int n)
-{
-    float sum = 0.0f;
-
-    for (int i = 0; i < n; i++)
-        sum += pow(res[i], 2.0f);
-
-    return sqrt(sum);
-}
-
-
-// Imprime as normas dos residuos
-void print_residues (FILE *output_file, System *sys, float **x)
-{
-    float norm;
-    float *res = NULL;
-
-    float **identity = set_identity(new_matrix(sys->n) , sys->n);
-
-    for (int i = 0; i < sys->n; i++)
-    {
-        res = residue(sys, identity[i], x[i]);
-        norm = residue_norm(res, sys->n);
-        
-        free(res);
-        fprintf(output_file, "%f ", norm);
-    }
-
-    fprintf(output_file, "\n");
-
-    free_matrix(identity);
-    res = NULL;
-}
-
-
-void print_result (FILE *output_file, System *sys, float **inverse, double time_tri, double time_y, double time_x)
-{
-    fprintf(output_file, "%u\n", sys->n);
-    print_matrix(output_file, sys->A, sys->n, 0);
-
-    fprintf(output_file, "#\n");
-
-    print_matrix(output_file, inverse, sys->n, 1);
-
-    fprintf(output_file, "###########\n");
-
-    fprintf(output_file, "# Tempo Triangularização: %1.9f\n", time_tri);
-    fprintf(output_file, "# Tempo cálculo de Y: %1.9f\n", time_y);
-    fprintf(output_file, "# Tempo cálculo de X: %1.9f\n", time_x);
-    fprintf(output_file, "# Norma L2 do Residuo: ");
-    print_residues(output_file, sys, inverse);
-
-    fprintf(output_file, "###########\n");
 }

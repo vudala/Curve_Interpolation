@@ -1,12 +1,15 @@
 #ifndef __SYSTEM__
 #define __SYSTEM__
 
+#include "matrix.h"
+#include "interpolation.h"
+
 typedef struct {
     unsigned int n; // Dimensão da matriz
-    float **A;      // Matriz original A
-    float **L;      // Matriz decomposta L
-    float **U;      // Matriz decomposta U
-    float **B;      // Matriz identidade
+    matrix_double A; // Matriz original A
+    matrix_double L; // Matriz decomposta L
+    matrix_double U; // Matriz decomposta U
+    matrix_double B; // Matriz identidade
 } System;
 
 // Inicializa um novo sistema
@@ -19,12 +22,12 @@ System *read_system ();
 void free_system (System *sys);
 
 // Realiza a triangularização
-double triangularization (System *sys, unsigned int piv);
+void triangularization (const System * restrict sys, const unsigned int piv);
 
 // Calcula a matriz inversa do sistema
-void invert (System *sys, float **x, double *x_total_time, double *y_total_time);
+void solve_it (System *sys, matrix_double inverse, unsigned int m);
 
-// Imprime os resultados em output_file
-void print_result (FILE *output_file, System *sys, float **inverse, double time_tri, double time_y, double time_x);
+
+System * build_system (const Interpolation * restrict inter);
 
 #endif

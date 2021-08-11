@@ -14,6 +14,6 @@ void must_alloc (void *ptr, const char* desc);
 double timestamp (void);
 
 // Checa se n é um número inválido
-void check_exception (float n, const char *desc);
+void check_exception (double n, const char *desc);
 
 #endif

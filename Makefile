@@ -1,8 +1,8 @@
 CC = 		gcc
-OBJS = 		main.o system.o matrix.o utils.o
+OBJS = 		main.o system.o matrix.o utils.o interpolation.o
 LIBS = 		-lm
 OUTPUT = 	matrixInv
-CFLAGS = 	-Wall
+CFLAGS = 	-g 
 RM = 		rm -f
 
 all: $(OBJS)
@@ -21,3 +21,7 @@ clean limpar:
 purge faxina: clean
 	@echo "Faxina..."
 	@$(RM) $(OUTPUT)
+
+
+run: purge all clean
+	./matrixInv < input.in

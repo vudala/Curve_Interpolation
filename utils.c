@@ -22,7 +22,7 @@ double timestamp (void)
 }
 
 
-int invalid(float num)
+int invalid(double num)
 {
     if (num == NAN)         return 1;
     if (num == INFINITY)    return 1;
@@ -31,7 +31,7 @@ int invalid(float num)
 }
 
 
-void check_exception (float n, const char *desc)
+void check_exception (double n, const char *desc)
 {
     if (invalid(n))
     {

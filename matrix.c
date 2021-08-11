@@ -5,22 +5,22 @@
 #include "matrix.h"
 #include "utils.h"
 
-float **new_matrix (unsigned int n)
+matrix_double new_matrix (unsigned int m, unsigned int n)
 {
-    float **new = (float**) malloc(sizeof(float*) * n);
+    matrix_double new = (matrix_double) malloc(sizeof(double*) * m);
     must_alloc(new, __func__);
 
-    new[0] = (float*) calloc(n * n, sizeof(float));
+    new[0] = (double*) calloc(m * n, sizeof(double));
     must_alloc(new[0], __func__);
 
-    for (int i = 0; i < n; i++)
+    for (unsigned int i = 0; i < m; i++)
         new[i] = new[0] + i * n;
 
     return new;
 }
 
 
-float **set_identity (float **matrix, unsigned int n)
+matrix_double set_identity (matrix_double matrix, unsigned int n)
 {
     for (int i = 0; i < n; i++)
         matrix[i][i] = 1;
@@ -28,40 +28,37 @@ float **set_identity (float **matrix, unsigned int n)
 }
 
 
-void print_matrix (FILE *output_file, float **m, unsigned int n, unsigned int inverse)
+void print_matrix (matrix_double mat, const unsigned int m, const unsigned int n)
 {
-    int i, j;
-    for (i = 0; i < n; i++)
+    unsigned int i, j;
+    for (i = 0; i < m; i++)
     {
         for (j = 0; j < n; j++)
-            if (inverse)
-                fprintf(output_file, "%f ", m[j][i]);
-            else
-                fprintf(output_file, "%f ", m[i][j]);
-        fprintf(output_file, "\n");
+            printf("%.19f ", mat[i][j]);
+        printf("\n");
     }
 }
 
 
-void free_matrix (float **mat)
+void free_matrix (matrix_double mat)
 {
     free(mat[0]);
     free(mat);
 }
 
 
-float **clone_matrix (float **m, unsigned int n)
+matrix_double clone_matrix (matrix_double mat, unsigned int m, unsigned int n)
 {   
-    float **clone = (float**) malloc(sizeof(float*) * n);
+    matrix_double clone = (matrix_double) malloc(sizeof(double*) * m);
     must_alloc(clone, __func__);
     
-    clone[0] = malloc(sizeof(float) * n * n);
+    clone[0] = malloc(sizeof(double) * m * n);
     must_alloc(clone[0], __func__);
 
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < m; i++)
         clone[i] = clone[0] + i * n;
 
-    memcpy(clone[0], m[0], sizeof(float) * n * n);
+    memcpy(clone[0], mat[0], sizeof(double) * m * n);
 
     return clone;
 }
