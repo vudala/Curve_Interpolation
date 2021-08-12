@@ -8,12 +8,6 @@
 
 #include <likwid.h>
 
-#define LIKWID_MARKER_INIT
-#define LIKWID_MARKER_START(regionTag)
-#define LIKWID_MARKER_STOP(regionTag)
-#define LIKWID_MARKER_CLOSE
-
-
 int main(int argc, char **argv)
 {
     LIKWID_MARKER_INIT;

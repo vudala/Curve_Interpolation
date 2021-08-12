@@ -1,18 +1,19 @@
 CC = 		gcc
 OBJS = 		main.o system.o matrix.o utils.o input.o
+LIKWID_PATH = /home/soft/likwid
 LIBS = 		-lm
 OUTPUT = 	matrixInv
 CFLAGS = 	-O3 -mavx -march=native -g
 RM = 		rm -f
 
 all: $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) $(LIBS) -o $(OUTPUT)
+	$(CC) -L$(LIKWID_PATH)/lib $(CFLAGS) $(OBJS) $(LIBS) -o $(OUTPUT)
 
 main.o: main.c 
-	$(CC) -c $(CFLAGS) $(LIBS) main.c
+	$(CC) -DLIKWID_PERFMON -I${LIKWID_PATH}/include -c $(CFLAGS) $(LIBS) main.c
 	
 %.o: %.c %.h
-	$(CC) -c $(CFLAGS) $(LIBS) $<
+	$(CC) -DLIKWID_PERFMON -I${LIKWID_PATH}/include -c $(CFLAGS) $(LIBS) $<
 
 clean limpar:
 	@echo "Limpando..."
