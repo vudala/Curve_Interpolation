@@ -4,7 +4,6 @@
 
 #include "system.h"
 #include "matrix.h"
-#include "utils.h"
 #include "input.h"
 
 int main(int argc, char **argv)

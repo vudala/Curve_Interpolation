@@ -10,9 +10,10 @@ typedef struct {
     matrix_double func_values; // Funções sobre valores tabelados
 } Input;
 
-
+// Lê a entrada
 Input *read_input ();
 
+// Libera o espaço de memória ocupado por uma estrutura Input
 void free_input(Input * inp);
 
 #endif
