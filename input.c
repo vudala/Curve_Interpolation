@@ -25,18 +25,29 @@ Input * new_input (_cuint n, _cuint m)
 Input * read_input ()
 {
     _uint n, m;
-    fscanf(stdin, "%u %u\n", &n, &m);
+    if (scanf("%u %u\n", &n, &m));
 
     Input *input = new_input(n, m);
 
     _uint i, j;
 
     for (i = 0; i < n; i++)
-        fscanf(stdin, "%lf", &(input->values[i]));
+        if (scanf("%Lf", &(input->values[i])));
 
     for (i = 0; i < m; i++)
         for (j = 0; j < n; j++)
-            fscanf(stdin, "%lf", &(input->func_values[i][j]));
+            if (scanf("%Lf", &(input->func_values[i][j])));
 
     return input;
+}
+
+
+void free_input(Input * inp)
+{
+    if (inp)
+    {
+        free(inp->values);
+        free_matrix(inp->func_values);
+        free(inp);
+    }
 }

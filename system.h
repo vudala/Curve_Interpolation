@@ -15,13 +15,13 @@ typedef struct {
 // Libera o espaço de memória ocupado por um sistema
 void free_system (System *sys);
 
-System * setup_interpolation (const Input * restrict inter);
+System * setup_interpolation (const Input * restrict input);
 
 // Resolve um sistema LU
 void interpolation (System *sys, matrix_double result, _uint m);
 
 System * setup_curve_adj (const Input * input);
 
-void curve_adjustment (const System * sys, Input * input, matrix_double results);
+void curve_adjustment (System * sys, Input * input, matrix_double results);
 
 #endif

@@ -10,6 +10,9 @@ typedef struct {
     matrix_double func_values; // Funções sobre valores tabelados
 } Input;
 
+
 Input *read_input ();
+
+void free_input(Input * inp);
 
 #endif

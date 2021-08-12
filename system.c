@@ -16,47 +16,54 @@ System *new_system (_uint n)
 
     new->A = new_matrix(n, n);
     new->L = new_matrix(n, n);
+    new->U = NULL;
+    new->B = NULL;
     new->n = n;
 
     return new;
 }
 
 
-void free_system (System *sys)
+void free_system (System * sys)
 {
-    free_matrix(sys->A);
-    free_matrix(sys->L);
-    free_matrix(sys->U);
-    free_matrix(sys->B);
-    free(sys);
+    if (sys)
+    {
+        free_matrix(sys->A);
+        free_matrix(sys->L);
+        free_matrix(sys->U);
+        free_matrix(sys->B);
+        free(sys);
+    }
 }
-
 
 // Realiza o pivoteamente de um sistema linear e suas partes
 void pivoting (const System * restrict sys)
 {
     _cuint n = sys->n;
+    const matrix_double A = sys->A;
     const matrix_double L = sys->L;
     const matrix_double U = sys->U;
     const matrix_double B = sys->B;
 
+    vector_double A_row_k = NULL;
     vector_double L_row_k = NULL;
     vector_double U_row_k = NULL;
     vector_double B_row_k = NULL;
 
     _uint i, k, c, max_index;
-    double max, aux;
+    long double max, aux;
 
     for (k = 0; k < n - 1; k++)
     {
         max_index = k;
-        max = fabs(U[k][k]);
+        max = fabs(A[k][k]);
         for (i = k + 1; i < n; i++)
-            if (fabs(U[i][k]) > max)
+            if (fabs(A[i][k]) > max)
                 max_index = i;
 
         if (max_index != k)
         { // Se terminou em um índice diferente de onde começou, troca
+            A_row_k = A[k];
             L_row_k = L[k];
             U_row_k = U[k];
             B_row_k = B[k];
@@ -79,30 +86,30 @@ void pivoting (const System * restrict sys)
 Otimizações feitas:
 - Uso de constantes em ponteiros e valores imutáveis ao longo do código
 - Localização de variáveis para serem armazenadas em registrador
-- Cálculos de índice são guardados em variáveis para não precisarem ser recalculados
-- Uso de _uint ao invés de int
+- Uso de _uint e _cuint ao invés de int
 - Uso de restrict nos ponteiros
 - Funções auxiliares também foram otimizadas
 */
-void triangularization (const System * restrict sys, _cuint piv)
+void triangularization (System * restrict sys)
 {
     _cuint n = sys->n;
+    sys->U = clone_matrix(sys->A, n, n);
+
     const matrix_double L = sys->L;
     const matrix_double U = sys->U;
 
     _uint i, k, j;
-    double m;
+    long double m;
     vector_double U_row_i = NULL;
     vector_double U_row_k = NULL;
-    double element;
+    long double element;
 
     for (k = 0; k < n - 1; k++)
     {
+        //pivoting(sys);
+
         U_row_k = U[k];
         element = U_row_k[k];
-        
-        if (piv)
-            pivoting(sys);
             
         for (i = k + 1; i < n; i++)
         {
@@ -172,19 +179,19 @@ void retrossubs (matrix_double L, matrix_double U, vector_double terms, vector_d
     aux = NULL;
 }
 
-System * setup_interpolation (const Input * restrict inter)
+
+System * setup_interpolation (const Input * restrict input)
 {   
-    System * sys = new_system(inter->n);
+    System * sys = new_system(input->n);
 
     _uint i, j;
-    for (i = 0; i < inter->n; i++)
-        for (j = 0; j < inter->n; j++)
-            sys->A[i][j] = pow(inter->values[i], j);
+    for (i = 0; i < input->n; i++)
+        for (j = 0; j < input->n; j++)
+            sys->A[i][j] = powl(input->values[i], (long double) j);
 
-    sys->U = clone_matrix(sys->A, sys->n, sys->n);
-    sys->B = clone_matrix(inter->func_values, inter->m, inter->n);
+    sys->B = clone_matrix(input->func_values, input->m, input->n);
 
-    triangularization(sys, 0);
+    triangularization(sys);
 
     return sys;
 }
@@ -193,8 +200,56 @@ System * setup_interpolation (const Input * restrict inter)
 // Resolve um sistema linear decomposto em LU
 void interpolation (System *sys, matrix_double result, _uint m)
 {
-    for (int i = 0; i < m; i++)
+    for (_uint i = 0; i < m; i++)
         retrossubs(sys->L, sys->U, sys->B[i], result[i], sys->n);
+}
+
+// Calcula a matriz de coeficientes utilizada no ajuste de curvas
+/* 
+Otimizações feitas:
+- O cálculo dos coeficientes de uma diagonal é feito apenas uma vez e distribuido ao longo da sua diagonal,
+orientada da direita pra esquerda
+- Uso de constantes em ponteiros e valores imutáveis ao longo do código
+- Localização de variáveis para serem armazenadas em registrador
+- Uso de _uint e _cuint ao invés de int
+- Uso de restrict nos ponteiros
+*/
+void calc_coef (const matrix_double restrict coef, const Input * restrict input)
+{
+    _cuint degree = input->n, n = input->n;
+
+    const vector_double values = input->values;
+    long double sum;
+
+    int k, i, j;
+
+    // Calcula o valor do somatório da diagonal k e distribui o valor a longo da diagonal respectiva
+    for (k = 0; k < degree; k++)
+    {
+        // Calcula o somatório
+        sum = 0.0f;
+        for (i = 0; i < n; i++)
+            sum += pow(values[i], k);
+
+        // Distribui o valor pela diagonal
+        coef[0][k] = sum;
+        for (j = k - 1, i = 1; j >= 0; i++, j--)
+            coef[i][j] = sum;
+    }
+
+    // Calcula o valor do somatório da diagonal k e distribui o valor a longo da diagonal respectiva
+    for (k = degree - 1; k > 0; k--)
+    {
+        // Calcula o somatório
+        sum = 0.0f;
+        for (i = 0; i < n; i++)
+            sum += pow(values[i], k) * pow(values[i], degree - 1);
+
+        // Distribui o valor pela diagonal
+        coef[degree - 1][k] = sum;
+        for (j = k + 1, i = degree - 2; j < degree; j++, i--)
+            coef[i][j] = sum;
+    }
 }
 
 
@@ -204,41 +259,12 @@ System * setup_curve_adj (const Input * input)
     _cuint degree = input->n;
 
     System * sys = new_system(degree);
-
-    int k, i, j;
-    double element, sum;
     
-    // Calcula o valor do somatório da diagonal k e distribui o valor a longo da diagonal
-    for (k = 0; k < degree; k++)
-    {
-        // Calcula o somatório
-        sum = 0.0f; 
-        for (i = 0; i < input->n; i++)
-            sum += pow(input->values[i], k);
-
-        
-        sys->A[0][k] = sum;
-        for (j = k - 1, i = 1; j >= 0; i++, j--)
-            sys->A[i][j] = sum;
-    }
-
-    // Calcula o valor do somatório da diagonal k e distribui o valor a longo da diagonal
-    for (k = degree - 1; k > 0; k--)
-    {
-        // Calcula o somatório
-        sum = 0.0f;
-        for (i = 0; i < input->n; i++)
-            sum += pow(input->values[i], k) * pow(input->values[i], degree - 1);
-
-        // Distribui o valor pela diagonal
-        sys->A[degree - 1][k] = sum;
-        for (j = k + 1, i = degree - 2; j < degree; j++, i--)
-            sys->A[i][j] = sum;
-    }
+    calc_coef(sys->A, input);
 
     sys->U = clone_matrix(sys->A, sys->n, sys->n);
     
-    triangularization(sys, 0);
+    triangularization(sys);
 
     return sys;
 }
@@ -249,7 +275,7 @@ vector_double retrieve_terms (_cuint n, _cuint degree, vector_double values, vec
 {
     vector_double terms = new_vector(degree);
 
-    double sum;
+    long double sum;
 
     _uint i, j;
     for (j = 0; j < degree; j++)
@@ -265,16 +291,19 @@ vector_double retrieve_terms (_cuint n, _cuint degree, vector_double values, vec
 
 
 // Resolve os sistemas lineares do ajuste de curvas
-void curve_adjustment (const System * sys, Input * input, matrix_double results)
+void curve_adjustment (System * sys, Input * input, matrix_double results)
 {
     _cuint degree = input->n;
 
     vector_double terms = NULL;
-    
+
     _uint i;
     for (i = 0; i < input->m; i++)
     {
         terms = retrieve_terms(input->n, degree, input->values, input->func_values[i]);
         retrossubs(sys->L, sys->U, terms, results[i], degree);
+        free(terms);
     }
+
+    terms = NULL;
 }

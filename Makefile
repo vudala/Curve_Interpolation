@@ -2,7 +2,7 @@ CC = 		gcc
 OBJS = 		main.o system.o matrix.o utils.o input.o
 LIBS = 		-lm
 OUTPUT = 	matrixInv
-CFLAGS = 	-g 
+CFLAGS = 	-O3 -mavx -march=native -g
 RM = 		rm -f
 
 all: $(OBJS)
@@ -23,5 +23,5 @@ purge faxina: clean
 	@$(RM) $(OUTPUT)
 
 
-run: purge all clean
+run: all
 	./matrixInv < input.in

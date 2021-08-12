@@ -1,8 +1,8 @@
 #ifndef __MATRIX__
 #define __MATRIX__
 
-typedef double *  vector_double;
-typedef double ** matrix_double;
+typedef long double *  vector_double;
+typedef long double ** matrix_double;
 
 #include "utils.h"
 

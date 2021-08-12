@@ -14,6 +14,6 @@ typedef const _uint  _cuint;
 void must_alloc (void *ptr, const char* desc);
 
 // Checa se n é um número inválido
-void check_exception (double n, const char *desc);
+void check_exception (long double n, const char *desc);
 
 #endif

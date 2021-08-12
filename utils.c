@@ -14,7 +14,7 @@ void must_alloc (void *ptr, const char* desc)
 }
 
 
-int invalid(double num)
+int invalid(long double num)
 {
     if (num == NAN)         return 1;
     if (num == INFINITY)    return 1;
@@ -23,7 +23,7 @@ int invalid(double num)
 }
 
 
-void check_exception (double n, const char *desc)
+void check_exception (long double n, const char *desc)
 {
     if (invalid(n))
     {
