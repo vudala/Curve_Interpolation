@@ -18,10 +18,6 @@ int main(int argc, char **argv)
     // Transforma o input em um sistema LU para a interpolação
     System * inter_system = setup_interpolation(input);
 
-    //print_matrix(inter_system->A, input->n, input->n);
-
-    //print_matrix(inter_system->A, inter_system->n, inter_system->n);
-
     // Matriz para armazenar os resultados da interpolação
     matrix_double inter_results = new_matrix(input->m, input->n);
 
@@ -54,9 +50,12 @@ int main(int argc, char **argv)
         print_vector(adjus_results[i], input->n);
     }
 
+    free_input(input);
     free_system(inter_system);
     free_system(adjus_system);
-    free_input(input);
+    free_matrix(inter_results);
+    free_matrix(adjus_results);
+    
 
     return SUCCESS_STATUS_CODE;
 }

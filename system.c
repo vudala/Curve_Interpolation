@@ -36,6 +36,7 @@ void free_system (System * sys)
     }
 }
 
+
 // Realiza o pivoteamento de um sistema linear e suas partes
 void pivoting (const System * restrict sys, unsigned int m)
 {
@@ -47,9 +48,8 @@ void pivoting (const System * restrict sys, unsigned int m)
 
     vector_double L_row_k = NULL;
     vector_double U_row_k = NULL;
-    vector_double B_row_k = NULL;
 
-    _uint i, k, c, max_index;
+    _uint i, k, c, j, max_index;
     long double max, aux;
 
     for (k = 0; k < n - 1; k++)
@@ -76,7 +76,7 @@ void pivoting (const System * restrict sys, unsigned int m)
                 U[max_index][c] = aux;
             }
 
-            for (int j = 0; j < m; j++)
+            for (j = 0; j < m; j++)
             {
                 aux = B[j][k];
                 B[j][k] = B[j][max_index];
@@ -267,8 +267,6 @@ System * setup_curve_adj (const Input * input)
     System * sys = new_system(degree);
     
     calc_coef(sys->A, input);
-
-    sys->U = clone_matrix(sys->A, sys->n, sys->n);
     
     triangularization(sys, input->m, 0);
 
