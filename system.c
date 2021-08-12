@@ -8,6 +8,8 @@
 #include "utils.h"
 #include "input.h"
 
+#include <likwid.h>
+
 
 System *new_system (_uint n)
 {
@@ -197,7 +199,9 @@ System * setup_interpolation (const Input * restrict input)
 
     sys->B = clone_matrix(input->func_values, input->m, input->n);
 
+    LIKWID_MARKER_START("inter_trian");
     triangularization(sys, input->m, 1);
+    LIKWID_MARKER_STOP("inter_trian");
 
     return sys;
 }
@@ -266,9 +270,13 @@ System * setup_curve_adj (const Input * input)
 
     System * sys = new_system(degree);
     
+    LIKWID_MARKER_START("adjus_calc_coef");
     calc_coef(sys->A, input);
+    LIKWID_MARKER_STOP("adjus_calc_coef");
     
+    LIKWID_MARKER_START("adjus_trian");
     triangularization(sys, input->m, 0);
+    LIKWID_MARKER_STOP("adjus_trian");
 
     return sys;
 }

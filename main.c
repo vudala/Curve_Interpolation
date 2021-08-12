@@ -6,8 +6,18 @@
 #include "matrix.h"
 #include "input.h"
 
+#include <likwid.h>
+
+#define LIKWID_MARKER_INIT
+#define LIKWID_MARKER_START(regionTag)
+#define LIKWID_MARKER_STOP(regionTag)
+#define LIKWID_MARKER_CLOSE
+
+
 int main(int argc, char **argv)
 {
+    LIKWID_MARKER_INIT;
+
     Input * input = read_input();
 
       ///////////////////////////////////////////////////////
@@ -54,7 +64,8 @@ int main(int argc, char **argv)
     free_system(adjus_system);
     free_matrix(inter_results);
     free_matrix(adjus_results);
-    
+
+    LIKWID_MARKER_CLOSE;
 
     return SUCCESS_STATUS_CODE;
 }
