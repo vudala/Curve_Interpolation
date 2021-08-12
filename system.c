@@ -36,16 +36,15 @@ void free_system (System * sys)
     }
 }
 
-// Realiza o pivoteamente de um sistema linear e suas partes
-void pivoting (const System * restrict sys)
+// Realiza o pivoteamento de um sistema linear e suas partes
+void pivoting (const System * restrict sys, unsigned int m)
 {
     _cuint n = sys->n;
-    const matrix_double A = sys->A;
+    
     const matrix_double L = sys->L;
     const matrix_double U = sys->U;
     const matrix_double B = sys->B;
 
-    vector_double A_row_k = NULL;
     vector_double L_row_k = NULL;
     vector_double U_row_k = NULL;
     vector_double B_row_k = NULL;
@@ -56,17 +55,15 @@ void pivoting (const System * restrict sys)
     for (k = 0; k < n - 1; k++)
     {
         max_index = k;
-        max = fabs(A[k][k]);
+        max = fabsl(U[k][k]);
         for (i = k + 1; i < n; i++)
-            if (fabs(A[i][k]) > max)
+            if (fabsl(U[i][k]) > max)
                 max_index = i;
 
         if (max_index != k)
         { // Se terminou em um índice diferente de onde começou, troca
-            A_row_k = A[k];
             L_row_k = L[k];
             U_row_k = U[k];
-            B_row_k = B[k];
 
             for (c = 0; c < n; c++)
             {
@@ -78,9 +75,17 @@ void pivoting (const System * restrict sys)
                 U_row_k[c] = U[max_index][c];
                 U[max_index][c] = aux;
             }
+
+            for (int j = 0; j < m; j++)
+            {
+                aux = B[j][k];
+                B[j][k] = B[j][max_index];
+                B[j][max_index] = aux;
+            }
         }
     }
 }
+
 
 /* 
 Otimizações feitas:
@@ -90,7 +95,7 @@ Otimizações feitas:
 - Uso de restrict nos ponteiros
 - Funções auxiliares também foram otimizadas
 */
-void triangularization (System * restrict sys)
+void triangularization (System * restrict sys, _uint m, unsigned int piv)
 {
     _cuint n = sys->n;
     sys->U = clone_matrix(sys->A, n, n);
@@ -99,14 +104,15 @@ void triangularization (System * restrict sys)
     const matrix_double U = sys->U;
 
     _uint i, k, j;
-    long double m;
+    long double mul;
     vector_double U_row_i = NULL;
     vector_double U_row_k = NULL;
     long double element;
 
     for (k = 0; k < n - 1; k++)
     {
-        //pivoting(sys);
+        if (piv)
+            pivoting(sys, m);
 
         U_row_k = U[k];
         element = U_row_k[k];
@@ -115,15 +121,15 @@ void triangularization (System * restrict sys)
         {
             U_row_i = U[i];
 
-            m = U_row_i[k] / element;
+            mul = U_row_i[k] / element;
             check_exception(m, __func__);
 
-            L[i][k] = m;
+            L[i][k] = mul;
             U_row_i[k] = 0.0f;
 
             for (j = k + 1; j < n; j++)
             {
-                U_row_i[j] -= (m * U_row_k[j]);
+                U_row_i[j] -= (mul * U_row_k[j]);
                 check_exception(U_row_i[j], __func__);
             }
         }
@@ -191,7 +197,7 @@ System * setup_interpolation (const Input * restrict input)
 
     sys->B = clone_matrix(input->func_values, input->m, input->n);
 
-    triangularization(sys);
+    triangularization(sys, input->m, 1);
 
     return sys;
 }
@@ -264,7 +270,7 @@ System * setup_curve_adj (const Input * input)
 
     sys->U = clone_matrix(sys->A, sys->n, sys->n);
     
-    triangularization(sys);
+    triangularization(sys, input->m, 0);
 
     return sys;
 }
