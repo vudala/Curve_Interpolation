@@ -2,7 +2,7 @@ CC = 		gcc
 OBJS = 		main.o system.o matrix.o utils.o input.o
 LIKWID_PATH = /home/soft/likwid
 LIBS = 		-lm
-OUTPUT = 	matrixInv
+OUTPUT = 	interpolation
 CFLAGS = 	-O3 -mavx -march=native -g
 RM = 		rm -f
 

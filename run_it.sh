@@ -1,4 +1,4 @@
-PROGRAM=./matrixInv
+PROGRAM=./interpolation
 
 INPUT_FILE=input.txt
 
