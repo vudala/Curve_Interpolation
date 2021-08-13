@@ -1,0 +1,23 @@
+#!/usr/bin/gnuplot -c
+
+set encoding utf
+
+set terminal png size 1200,800
+
+set output 'time_elapsed.png'
+
+set datafile separator ','
+
+set title 'Tempo decorrido em escala logarítmica'
+
+set xlabel 'N'
+set ylabel 'Segundos'
+
+set logscale y 10
+
+plot 'input.csv' using 1:2 with lines lw 2 title 'Interpo-Trian', '' using 1:3 with lines lw 2 title 'Ajuste-Coef', \
+'' using 1:4 with lines lw 2 title 'Ajuste-Trian', '' using 1:5 with lines lw 2 title 'Trian-Old', '' using 1:6 with lines lw 2 title 'Trian-Old-Piv'
+
+show plot
+
+pause mouse
